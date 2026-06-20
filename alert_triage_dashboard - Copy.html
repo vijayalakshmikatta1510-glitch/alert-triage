@@ -1,0 +1,844 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Alert Triage Workflow — Security Dashboard</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #f8f9fc;
+    --surface: #ffffff;
+    --surface2: #f1f3f8;
+    --border: rgba(0,0,0,0.10);
+    --border2: rgba(0,0,0,0.18);
+    --text: #111827;
+    --text2: #6b7280;
+    --text3: #9ca3af;
+    --blue: #185FA5; --blue-bg: #E6F1FB; --blue-txt: #0C447C;
+    --red: #A32D2D; --red-bg: #FCEBEB; --red-txt: #791F1F;
+    --amber: #854F0B; --amber-bg: #FAEEDA; --amber-txt: #633806;
+    --green: #3B6D11; --green-bg: #EAF3DE; --green-txt: #27500A;
+    --purple: #3C3489; --purple-bg: #EEEDFE; --purple-txt: #26215C;
+    --radius: 8px; --radius-lg: 12px;
+    --font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0f1117; --surface: #1a1d27; --surface2: #242736;
+      --border: rgba(255,255,255,0.08); --border2: rgba(255,255,255,0.14);
+      --text: #f3f4f6; --text2: #9ca3af; --text3: #6b7280;
+      --blue: #378ADD; --blue-bg: #0C2D4F; --blue-txt: #B5D4F4;
+      --red: #E24B4A; --red-bg: #3B1515; --red-txt: #F7C1C1;
+      --amber: #EF9F27; --amber-bg: #3B2206; --amber-txt: #FAC775;
+      --green: #97C459; --green-bg: #1a2e09; --green-txt: #C0DD97;
+      --purple: #AFA9EC; --purple-bg: #1e1b3a; --purple-txt: #CECBF6;
+    }
+  }
+
+  body {
+    font-family: var(--font);
+    background: var(--bg);
+    color: var(--text);
+    font-size: 13px;
+    min-height: 100vh;
+  }
+
+  /* ── Layout ── */
+  .app { display: flex; height: 100vh; overflow: hidden; }
+
+  .sidebar {
+    width: 220px; flex-shrink: 0;
+    background: var(--surface);
+    border-right: 0.5px solid var(--border);
+    display: flex; flex-direction: column;
+    padding: 0;
+  }
+  .sidebar-logo {
+    padding: 18px 20px 14px;
+    border-bottom: 0.5px solid var(--border);
+    display: flex; align-items: center; gap: 10px;
+  }
+  .logo-icon {
+    width: 32px; height: 32px; background: var(--blue);
+    border-radius: var(--radius); display: flex; align-items: center; justify-content: center;
+    color: #fff; font-size: 16px;
+  }
+  .logo-name { font-weight: 600; font-size: 14px; color: var(--text); }
+  .logo-sub { font-size: 10px; color: var(--text2); }
+
+  .sidebar-nav { padding: 12px 10px; flex: 1; }
+  .nav-section { font-size: 10px; font-weight: 600; color: var(--text3); text-transform: uppercase; letter-spacing: .6px; padding: 10px 10px 4px; }
+  .nav-item {
+    display: flex; align-items: center; gap: 9px;
+    padding: 8px 10px; border-radius: var(--radius);
+    color: var(--text2); cursor: pointer; font-size: 13px;
+    transition: background .12s, color .12s;
+    user-select: none;
+  }
+  .nav-item:hover { background: var(--surface2); color: var(--text); }
+  .nav-item.active { background: var(--blue-bg); color: var(--blue-txt); font-weight: 500; }
+  .nav-item i { font-size: 16px; }
+  .nav-badge {
+    margin-left: auto; font-size: 10px; font-weight: 600;
+    background: var(--red-bg); color: var(--red-txt);
+    padding: 1px 6px; border-radius: 99px;
+  }
+
+  .sidebar-footer {
+    padding: 12px 10px;
+    border-top: 0.5px solid var(--border);
+  }
+  .user-row {
+    display: flex; align-items: center; gap: 10px; padding: 8px 10px;
+    border-radius: var(--radius); cursor: pointer;
+  }
+  .user-row:hover { background: var(--surface2); }
+  .avatar {
+    width: 30px; height: 30px; border-radius: 50%;
+    background: var(--blue-bg); color: var(--blue-txt);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 600; flex-shrink: 0;
+  }
+  .user-name { font-size: 12px; font-weight: 500; }
+  .user-role { font-size: 10px; color: var(--text2); }
+
+  /* ── Main ── */
+  .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+
+  .topbar {
+    height: 52px; background: var(--surface);
+    border-bottom: 0.5px solid var(--border);
+    display: flex; align-items: center; padding: 0 20px; gap: 12px; flex-shrink: 0;
+  }
+  .topbar-title { font-size: 15px; font-weight: 600; flex: 1; }
+  .topbar-tabs { display: flex; gap: 0; }
+  .tab-btn {
+    background: none; border: none; border-bottom: 2px solid transparent;
+    padding: 15px 16px 13px; font-size: 13px; font-weight: 500;
+    color: var(--text2); cursor: pointer; transition: all .15s; white-space: nowrap;
+  }
+  .tab-btn:hover { color: var(--text); }
+  .tab-btn.active { color: var(--blue); border-bottom-color: var(--blue); }
+  .topbar-actions { display: flex; gap: 8px; }
+  .icon-btn {
+    background: none; border: 0.5px solid var(--border2);
+    border-radius: var(--radius); width: 32px; height: 32px;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; color: var(--text2); font-size: 16px; transition: background .12s;
+  }
+  .icon-btn:hover { background: var(--surface2); color: var(--text); }
+
+  .content { flex: 1; overflow-y: auto; padding: 20px; }
+
+  /* ── Stat cards ── */
+  .stat-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin-bottom: 20px; }
+  .stat-card {
+    background: var(--surface);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 14px 16px;
+  }
+  .stat-label { font-size: 11px; color: var(--text2); margin-bottom: 6px; font-weight: 500; }
+  .stat-val { font-size: 24px; font-weight: 600; line-height: 1; }
+  .stat-sub { font-size: 10px; color: var(--text3); margin-top: 4px; }
+  .stat-val.c-red { color: var(--red); }
+  .stat-val.c-amber { color: var(--amber); }
+  .stat-val.c-green { color: var(--green); }
+  .stat-val.c-blue { color: var(--blue); }
+
+  /* ── Filters ── */
+  .filter-row {
+    display: flex; gap: 8px; margin-bottom: 14px; align-items: center; flex-wrap: wrap;
+  }
+  .filter-row select, .filter-row input[type="text"] {
+    border: 0.5px solid var(--border2);
+    border-radius: var(--radius);
+    background: var(--surface);
+    color: var(--text);
+    font-size: 12px;
+    padding: 6px 10px;
+    height: 32px;
+    outline: none;
+    font-family: var(--font);
+  }
+  .filter-row select:focus, .filter-row input[type="text"]:focus {
+    border-color: var(--blue);
+    box-shadow: 0 0 0 2px rgba(24,95,165,0.15);
+  }
+  .filter-row input[type="text"] { flex: 1; min-width: 200px; }
+  .btn {
+    border: 0.5px solid var(--border2); border-radius: var(--radius);
+    background: var(--surface); color: var(--text);
+    padding: 0 12px; height: 32px; font-size: 12px;
+    cursor: pointer; display: inline-flex; align-items: center; gap: 5px;
+    font-family: var(--font); font-weight: 500; transition: background .12s;
+    white-space: nowrap;
+  }
+  .btn:hover { background: var(--surface2); }
+  .btn-primary { background: var(--blue); color: #fff; border-color: var(--blue); }
+  .btn-primary:hover { background: var(--blue-txt); }
+  .btn-danger { background: var(--red-bg); color: var(--red-txt); border-color: var(--red-bg); }
+  .btn-danger:hover { background: #F7C1C1; }
+
+  /* ── Table ── */
+  .table-wrap { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+  table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+  thead th {
+    text-align: left; font-size: 10px; font-weight: 600;
+    color: var(--text2); text-transform: uppercase; letter-spacing: .5px;
+    padding: 10px 12px;
+    border-bottom: 0.5px solid var(--border);
+    background: var(--surface2);
+  }
+  tbody tr { border-bottom: 0.5px solid var(--border); cursor: pointer; transition: background .1s; }
+  tbody tr:last-child { border-bottom: none; }
+  tbody tr:hover { background: var(--surface2); }
+  tbody td { padding: 11px 12px; vertical-align: middle; }
+
+  .badge {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 99px;
+  }
+  .badge .dot { width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
+  .badge.crit { background: var(--red-bg); color: var(--red-txt); }
+  .badge.high { background: var(--amber-bg); color: var(--amber-txt); }
+  .badge.med { background: var(--blue-bg); color: var(--blue-txt); }
+  .badge.low { background: var(--green-bg); color: var(--green-txt); }
+  .badge.new { background: var(--purple-bg); color: var(--purple-txt); }
+  .badge.prog { background: var(--amber-bg); color: var(--amber-txt); }
+  .badge.res { background: var(--green-bg); color: var(--green-txt); }
+
+  .alert-name { font-size: 12px; font-weight: 500; color: var(--text); }
+  .alert-id { font-size: 10px; color: var(--text3); margin-top: 2px; }
+  .cell-muted { font-size: 11px; color: var(--text2); }
+
+  .bulk-bar {
+    background: var(--blue-bg); border: 0.5px solid var(--border);
+    border-radius: var(--radius-lg); padding: 10px 16px;
+    display: none; align-items: center; gap: 10px; margin-bottom: 14px;
+    font-size: 12px; color: var(--blue-txt);
+  }
+  .bulk-bar.visible { display: flex; }
+
+  /* ── Screen: Investigation ── */
+  .two-col { display: grid; grid-template-columns: 58% 42%; gap: 16px; align-items: start; }
+  .card {
+    background: var(--surface); border: 0.5px solid var(--border);
+    border-radius: var(--radius-lg); padding: 16px; margin-bottom: 12px;
+  }
+  .card:last-child { margin-bottom: 0; }
+  .card-label { font-size: 10px; font-weight: 600; color: var(--text3); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 10px; }
+  .alert-title-lg { font-size: 15px; font-weight: 600; margin-bottom: 4px; margin-top: 6px; }
+  .alert-desc { font-size: 12px; color: var(--text2); line-height: 1.6; margin-bottom: 10px; }
+  .meta-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+  .meta-item { font-size: 11px; }
+  .meta-item span { display: block; color: var(--text3); font-size: 10px; margin-bottom: 1px; }
+  details summary { font-size: 11px; color: var(--text2); cursor: pointer; margin-top: 8px; }
+  pre { font-size: 10px; background: var(--surface2); border-radius: var(--radius); padding: 10px; margin-top: 8px; overflow: auto; color: var(--text2); line-height: 1.5; font-family: 'Courier New', monospace; }
+
+  .baseline-box { border-radius: var(--radius); padding: 10px 12px; margin-top: 8px; font-size: 12px; line-height: 1.5; }
+  .baseline-box.warn { background: var(--amber-bg); color: var(--amber-txt); border-left: 3px solid #EF9F27; border-radius: 0 var(--radius) var(--radius) 0; }
+  .baseline-box.ok { background: var(--green-bg); color: var(--green-txt); border-left: 3px solid #639922; border-radius: 0 var(--radius) var(--radius) 0; }
+  .baseline-box strong { display: block; margin-bottom: 2px; }
+  .crit-tag { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 500; background: var(--red-bg); color: var(--red-txt); padding: 3px 10px; border-radius: 99px; margin-top: 10px; }
+
+  .tl-item { display: flex; gap: 10px; padding: 8px 0; border-bottom: 0.5px solid var(--border); }
+  .tl-item:last-child { border-bottom: none; }
+  .tl-time { font-size: 10px; color: var(--text3); min-width: 38px; padding-top: 2px; }
+  .tl-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; margin-top: 3px; }
+  .tl-body { flex: 1; }
+  .tl-event { font-size: 12px; font-weight: 500; }
+  .tl-sub { font-size: 11px; color: var(--text2); }
+
+  .related-item { display: flex; align-items: center; justify-content: space-between; padding: 8px 0; border-bottom: 0.5px solid var(--border); }
+  .related-item:last-child { border-bottom: none; }
+  .related-name { font-size: 12px; font-weight: 500; }
+  .related-sub { font-size: 10px; color: var(--text2); margin-top: 1px; }
+
+  .action-bar { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 4px; }
+
+  /* ── Screen: Resolution ── */
+  .resolution-grid { display: grid; grid-template-columns: 420px 1fr; gap: 16px; align-items: start; }
+  .drawer-card { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius-lg); padding: 20px; }
+  .drawer-title { font-size: 15px; font-weight: 600; margin-bottom: 4px; }
+  .alert-ref { font-size: 12px; color: var(--text2); background: var(--surface2); padding: 7px 10px; border-radius: var(--radius); margin-bottom: 16px; }
+  .field { margin-bottom: 14px; }
+  .field label { display: block; font-size: 10px; font-weight: 600; color: var(--text2); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 6px; }
+  .field select, .field textarea { width: 100%; border: 0.5px solid var(--border2); border-radius: var(--radius); background: var(--surface); color: var(--text); font-size: 12px; padding: 8px 10px; font-family: var(--font); outline: none; }
+  .field select:focus, .field textarea:focus { border-color: var(--blue); box-shadow: 0 0 0 2px rgba(24,95,165,0.12); }
+  .field textarea { resize: vertical; min-height: 72px; line-height: 1.5; }
+
+  .radio-group { display: flex; flex-direction: column; gap: 6px; }
+  .radio-opt {
+    display: flex; align-items: center; gap: 9px;
+    padding: 9px 12px; border: 0.5px solid var(--border2); border-radius: var(--radius);
+    cursor: pointer; font-size: 13px; transition: all .1s; user-select: none;
+  }
+  .radio-opt:hover { background: var(--surface2); }
+  .radio-opt.selected { border-color: var(--blue); background: var(--blue-bg); color: var(--blue-txt); }
+  .radio-opt input { accent-color: var(--blue); }
+
+  .cond-block { background: var(--amber-bg); border: 0.5px solid #FAC775; border-radius: var(--radius); padding: 12px; margin-top: 8px; }
+  .cond-label { font-size: 11px; font-weight: 600; color: var(--amber-txt); margin-bottom: 6px; display: flex; align-items: center; gap: 5px; }
+  .cond-text { font-size: 12px; color: var(--amber-txt); line-height: 1.5; }
+  .confirm-row { display: flex; align-items: center; gap: 8px; margin-top: 8px; font-size: 12px; color: var(--amber-txt); cursor: pointer; }
+  .confirm-row input { accent-color: var(--amber); }
+
+  .audit-preview { background: var(--surface2); border-radius: var(--radius); padding: 10px 12px; margin-top: 12px; font-size: 11px; color: var(--text2); }
+  .audit-row { display: flex; gap: 8px; padding: 4px 0; }
+  .audit-key { min-width: 72px; color: var(--text3); }
+
+  .drawer-footer { display: flex; gap: 8px; margin-top: 16px; padding-top: 14px; border-top: 0.5px solid var(--border); }
+  .drawer-footer .btn { flex: 1; justify-content: center; }
+
+  .success-toast { background: var(--green-bg); border: 0.5px solid #C0DD97; border-radius: var(--radius-lg); padding: 14px 16px; color: var(--green-txt); font-size: 13px; font-weight: 500; display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
+  .success-toast i { font-size: 20px; }
+
+  /* ── Screen hidden/visible ── */
+  .screen { display: none; }
+  .screen.active { display: block; }
+
+  /* ── Scrollbar ── */
+  ::-webkit-scrollbar { width: 5px; height: 5px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 99px; }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-icon"><i class="ti ti-shield-check" aria-hidden="true"></i></div>
+      <div>
+        <div class="logo-name">CloudGuard</div>
+        <div class="logo-sub">SOC Platform</div>
+      </div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-section">Operations</div>
+      <div class="nav-item active" onclick="navTo('s1',this)">
+        <i class="ti ti-bell" aria-hidden="true"></i> Alert inbox
+        <span class="nav-badge">12</span>
+      </div>
+      <div class="nav-item" onclick="navTo('s2',this)">
+        <i class="ti ti-zoom-in" aria-hidden="true"></i> Investigation
+      </div>
+      <div class="nav-item" onclick="navTo('s3',this)">
+        <i class="ti ti-check" aria-hidden="true"></i> Resolution
+      </div>
+      <div class="nav-section">Reporting</div>
+      <div class="nav-item">
+        <i class="ti ti-chart-bar" aria-hidden="true"></i> Analytics
+      </div>
+      <div class="nav-item">
+        <i class="ti ti-clock" aria-hidden="true"></i> Audit log
+      </div>
+      <div class="nav-section">Settings</div>
+      <div class="nav-item">
+        <i class="ti ti-adjustments" aria-hidden="true"></i> Playbooks
+      </div>
+      <div class="nav-item">
+        <i class="ti ti-users" aria-hidden="true"></i> Team
+      </div>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="user-row">
+        <div class="avatar">PS</div>
+        <div>
+          <div class="user-name">Priya S.</div>
+          <div class="user-role">SOC Analyst — L1</div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main area -->
+  <main class="main">
+
+    <!-- Topbar with tabs -->
+    <div class="topbar">
+      <div class="topbar-title" id="topbar-title">Alert inbox</div>
+      <div class="topbar-tabs">
+        <button class="tab-btn active" onclick="show('s1',this)">
+          <i class="ti ti-layout-list" aria-hidden="true"></i> Inbox
+        </button>
+        <button class="tab-btn" onclick="show('s2',this)">
+          <i class="ti ti-zoom-in" aria-hidden="true"></i> Investigation
+        </button>
+        <button class="tab-btn" onclick="show('s3',this)">
+          <i class="ti ti-check" aria-hidden="true"></i> Resolution
+        </button>
+      </div>
+      <div class="topbar-actions">
+        <button class="icon-btn" title="Refresh"><i class="ti ti-refresh" aria-hidden="true"></i></button>
+        <button class="icon-btn" title="Notifications"><i class="ti ti-bell" aria-hidden="true"></i></button>
+        <button class="icon-btn" title="Settings"><i class="ti ti-settings" aria-hidden="true"></i></button>
+      </div>
+    </div>
+
+    <!-- ━━━━━━━━ SCREEN 1: ALERT INBOX ━━━━━━━━ -->
+    <div class="content screen active" id="s1">
+
+      <div class="stat-grid">
+        <div class="stat-card">
+          <div class="stat-label">Total open</div>
+          <div class="stat-val">148</div>
+          <div class="stat-sub">+12 since last shift</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Critical</div>
+          <div class="stat-val c-red">12</div>
+          <div class="stat-sub">Needs immediate action</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">High</div>
+          <div class="stat-val c-amber">34</div>
+          <div class="stat-sub">Review within 1 hour</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Avg MTTA today</div>
+          <div class="stat-val c-blue">8m</div>
+          <div class="stat-sub">Target ≤ 10 min</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">My assigned</div>
+          <div class="stat-val c-green">7</div>
+          <div class="stat-sub">3 unacknowledged</div>
+        </div>
+      </div>
+
+      <div class="bulk-bar" id="bulk-bar">
+        <i class="ti ti-checkbox" aria-hidden="true"></i>
+        <span id="sel-count"></span>
+        <button class="btn" onclick="assignMe()"><i class="ti ti-user-check" aria-hidden="true"></i> Assign to me</button>
+        <button class="btn btn-danger" onclick="bulkFP()"><i class="ti ti-x" aria-hidden="true"></i> Close as false positive</button>
+        <button class="btn" style="margin-left:auto" onclick="clearSel()">Cancel</button>
+      </div>
+
+      <div class="filter-row">
+        <select id="sev-f" onchange="filterTable()">
+          <option value="">All severities</option>
+          <option value="Critical">Critical</option>
+          <option value="High">High</option>
+          <option value="Medium">Medium</option>
+          <option value="Low">Low</option>
+        </select>
+        <select id="acct-f" onchange="filterTable()">
+          <option value="">All accounts</option>
+          <option value="AWS">AWS — prod</option>
+          <option value="Azure">Azure — infra</option>
+          <option value="GCP">GCP — data</option>
+        </select>
+        <select id="type-f" onchange="filterTable()">
+          <option value="">All types</option>
+          <option value="IAM">IAM anomaly</option>
+          <option value="Data">Data exfiltration</option>
+          <option value="Misconfig">Misconfiguration</option>
+        </select>
+        <select id="stat-f" onchange="filterTable()">
+          <option value="">All statuses</option>
+          <option value="New">New</option>
+          <option value="In progress">In progress</option>
+          <option value="Resolved">Resolved</option>
+        </select>
+        <input type="text" id="search-f" placeholder="Search by resource, alert ID, or user…" oninput="filterTable()">
+        <button class="btn btn-primary" onclick="show('s2',document.querySelectorAll('.tab-btn')[1])">
+          <i class="ti ti-zoom-in" aria-hidden="true"></i> Investigate selected
+        </button>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th style="width:36px"><input type="checkbox" id="sel-all" onchange="toggleAll(this)"></th>
+              <th style="width:100px">Severity</th>
+              <th>Alert</th>
+              <th style="width:140px">Resource</th>
+              <th style="width:70px">Account</th>
+              <th style="width:80px">Detected</th>
+              <th style="width:100px">Status</th>
+              <th style="width:90px">Assigned</th>
+            </tr>
+          </thead>
+          <tbody id="table-body"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ━━━━━━━━ SCREEN 2: INVESTIGATION ━━━━━━━━ -->
+    <div class="content screen" id="s2">
+      <div class="two-col">
+
+        <!-- Left: context -->
+        <div>
+          <div class="card">
+            <div class="card-label">Alert summary</div>
+            <div style="display:flex;align-items:center;gap:8px">
+              <span class="badge crit"><span class="dot"></span>Critical</span>
+              <span style="font-size:10px;color:var(--text3)">#ALT-20491 · AWS — prod</span>
+            </div>
+            <div class="alert-title-lg">Unusual IAM privilege escalation detected</div>
+            <div class="alert-desc">A service account attached to the production data pipeline assumed an AdministratorAccess role — a permission it has never held before. The action originated from an IP address with no prior association to this account.</div>
+            <div class="meta-grid">
+              <div class="meta-item"><span>Resource</span>prod-pipeline-svc</div>
+              <div class="meta-item"><span>Alert type</span>IAM anomaly</div>
+              <div class="meta-item"><span>Detected</span>Today 09:14</div>
+              <div class="meta-item"><span>Cloud account</span>AWS — prod</div>
+            </div>
+            <details>
+              <summary><i class="ti ti-code" aria-hidden="true" style="font-size:13px;vertical-align:-1px"></i> View raw alert data</summary>
+              <pre>{
+  "eventName": "AssumeRole",
+  "sourceIPAddress": "198.51.100.47",
+  "userAgent": "aws-cli/2.13.1",
+  "requestParameters": {
+    "roleArn": "arn:aws:iam::123456789012:role/AdministratorAccess",
+    "roleSessionName": "pipeline-session-482"
+  },
+  "eventTime": "2024-06-16T09:14:02Z",
+  "errorCode": null
+}</pre>
+            </details>
+          </div>
+
+          <div class="card">
+            <div class="card-label">Entity context — prod-pipeline-svc</div>
+            <div style="font-size:13px;font-weight:500">prod-pipeline-svc <span style="font-size:11px;font-weight:400;color:var(--text2)">· Service account · Created 8 months ago</span></div>
+            <div class="baseline-box warn">
+              <strong><i class="ti ti-alert-triangle" aria-hidden="true" style="font-size:13px;vertical-align:-1px"></i> Baseline anomaly</strong>
+              This account has assumed AdministratorAccess <strong>0 times</strong> in the past 90 days. This privilege level is outside its normal permission scope.
+            </div>
+            <div class="baseline-box ok" style="margin-top:8px">
+              <strong><i class="ti ti-info-circle" aria-hidden="true" style="font-size:13px;vertical-align:-1px"></i> Source IP — first seen</strong>
+              IP 198.51.100.47 has <strong>0 prior API calls</strong> on record for this account. Not associated with any known office range or VPN.
+            </div>
+            <div style="margin-top:10px">
+              <span class="crit-tag"><i class="ti ti-server" aria-hidden="true" style="font-size:13px"></i> Production — tagged critical</span>
+            </div>
+          </div>
+
+          <div class="action-bar">
+            <button class="btn btn-danger" onclick="show('s3',document.querySelectorAll('.tab-btn')[2]);setAction('escalate')">
+              <i class="ti ti-arrow-up-circle" aria-hidden="true"></i> Escalate to L2
+            </button>
+            <button class="btn btn-primary" onclick="show('s3',document.querySelectorAll('.tab-btn')[2]);setAction('remediate')">
+              <i class="ti ti-tool" aria-hidden="true"></i> Remediate
+            </button>
+            <button class="btn" onclick="show('s3',document.querySelectorAll('.tab-btn')[2]);setAction('fp')">
+              <i class="ti ti-x" aria-hidden="true"></i> False positive
+            </button>
+            <button class="btn">
+              <i class="ti ti-notes" aria-hidden="true"></i> Add note
+            </button>
+          </div>
+        </div>
+
+        <!-- Right: timeline + related -->
+        <div>
+          <div class="card">
+            <div class="card-label" style="display:flex;justify-content:space-between;align-items:center">
+              Event timeline
+              <span style="display:flex;gap:4px">
+                <button class="btn" style="padding:2px 8px;height:24px;font-size:10px" onclick="this.parentNode.querySelectorAll('.btn').forEach(b=>b.style.background='');this.style.background='var(--surface2)'">1h</button>
+                <button class="btn" style="padding:2px 8px;height:24px;font-size:10px;background:var(--surface2)">24h</button>
+                <button class="btn" style="padding:2px 8px;height:24px;font-size:10px" onclick="this.parentNode.querySelectorAll('.btn').forEach(b=>b.style.background='');this.style.background='var(--surface2)'">7d</button>
+              </span>
+            </div>
+            <div class="tl-item">
+              <div class="tl-time">09:14</div>
+              <div class="tl-dot" style="background:#A32D2D"></div>
+              <div class="tl-body">
+                <div class="tl-event">AssumeRole — AdministratorAccess</div>
+                <div class="tl-sub">prod-pipeline-svc via IP 198.51.100.47</div>
+              </div>
+            </div>
+            <div class="tl-item">
+              <div class="tl-time">09:12</div>
+              <div class="tl-dot" style="background:#A32D2D"></div>
+              <div class="tl-body">
+                <div class="tl-event">CreateUser — new IAM user added</div>
+                <div class="tl-sub">user: svc-backup-temp · no MFA enabled</div>
+              </div>
+            </div>
+            <div class="tl-item">
+              <div class="tl-time">09:11</div>
+              <div class="tl-dot" style="background:#854F0B"></div>
+              <div class="tl-body">
+                <div class="tl-event">ListRoles — IAM enumeration</div>
+                <div class="tl-sub">First time this account queried all roles</div>
+              </div>
+            </div>
+            <div class="tl-item">
+              <div class="tl-time">09:08</div>
+              <div class="tl-dot" style="background:#3B6D11"></div>
+              <div class="tl-body">
+                <div class="tl-event">GetCallerIdentity</div>
+                <div class="tl-sub">Standard API probe — low risk in isolation</div>
+              </div>
+            </div>
+            <div class="tl-item">
+              <div class="tl-time">08:52</div>
+              <div class="tl-dot" style="background:#185FA5"></div>
+              <div class="tl-body">
+                <div class="tl-event">AuthorizeSecurityGroupIngress</div>
+                <div class="tl-sub">New inbound rule on prod-sg-001 · port 22 open</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-label">
+              Related alerts
+              <span class="badge crit" style="margin-left:6px;padding:1px 6px;font-size:10px">3</span>
+            </div>
+            <div class="related-item">
+              <div>
+                <div class="related-name">CloudTrail logging disabled</div>
+                <div class="related-sub">Same account · 09:01 · <strong>#ALT-20488</strong></div>
+              </div>
+              <span class="badge crit">Critical</span>
+            </div>
+            <div class="related-item">
+              <div>
+                <div class="related-name">S3 bucket policy widened</div>
+                <div class="related-sub">Same source IP · 08:55 · <strong>#ALT-20475</strong></div>
+              </div>
+              <span class="badge high">High</span>
+            </div>
+            <div class="related-item">
+              <div>
+                <div class="related-name">Port 22 exposed — security group</div>
+                <div class="related-sub">Same account · 08:52 · <strong>#ALT-20463</strong></div>
+              </div>
+              <span class="badge high">High</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ━━━━━━━━ SCREEN 3: RESOLUTION ━━━━━━━━ -->
+    <div class="content screen" id="s3">
+      <div id="toast" class="success-toast" style="display:none">
+        <i class="ti ti-circle-check" aria-hidden="true"></i>
+        Alert resolved — audit entry created. Returning to inbox…
+      </div>
+
+      <div class="resolution-grid">
+        <!-- Drawer form -->
+        <div class="drawer-card">
+          <div class="drawer-title">Resolve alert</div>
+          <div class="alert-ref"><strong>#ALT-20491</strong> · Unusual IAM privilege escalation detected · <span class="badge crit" style="font-size:10px">Critical</span></div>
+
+          <div class="field">
+            <label>Action</label>
+            <div class="radio-group">
+              <label class="radio-opt" id="opt-fp" onclick="selectOpt('fp')"><input type="radio" name="act" value="fp"> False positive — close alert</label>
+              <label class="radio-opt selected" id="opt-escalate" onclick="selectOpt('escalate')"><input type="radio" name="act" value="escalate" checked> Escalate to L2 analyst</label>
+              <label class="radio-opt" id="opt-remediate" onclick="selectOpt('remediate')"><input type="radio" name="act" value="remediate"> Remediate directly</label>
+              <label class="radio-opt" id="opt-monitor" onclick="selectOpt('monitor')"><input type="radio" name="act" value="monitor"> Monitor — no action yet</label>
+            </div>
+          </div>
+
+          <div class="field">
+            <label>Reason</label>
+            <select>
+              <option>Confirmed threat — active attack indicators</option>
+              <option>Known admin activity</option>
+              <option>Authorized change</option>
+              <option>Insufficient evidence — needs L2 review</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label>Notes</label>
+            <textarea id="notes-field">3 correlated alerts (CloudTrail disabled, S3 policy widened, new IAM user) strongly suggest active credential compromise. Escalating to L2 for incident response and containment.</textarea>
+          </div>
+
+          <div class="cond-block" id="remediate-block" style="display:none">
+            <div class="cond-label"><i class="ti ti-alert-triangle" aria-hidden="true" style="font-size:14px"></i> Suggested remediation action</div>
+            <div class="cond-text">Revoke all active sessions for <strong>prod-pipeline-svc</strong> and remove the AdministratorAccess role binding immediately.</div>
+            <label class="confirm-row"><input type="checkbox" id="confirm-cb"> I confirm this action on a production resource</label>
+          </div>
+
+          <div class="audit-preview">
+            <div class="audit-row"><span class="audit-key">Recorded as</span><span id="audit-analyst">Priya S.</span></div>
+            <div class="audit-row"><span class="audit-key">Timestamp</span><span id="audit-ts"></span></div>
+            <div class="audit-row"><span class="audit-key">Action</span><span id="audit-action-label">Escalate to L2</span></div>
+            <div class="audit-row"><span class="audit-key">Entry</span><span style="color:var(--green)">Created on submit — immutable</span></div>
+          </div>
+
+          <div class="drawer-footer">
+            <button class="btn" onclick="show('s2',document.querySelectorAll('.tab-btn')[1])">Cancel</button>
+            <button class="btn btn-primary" id="submit-btn" onclick="submitRes()">
+              <span id="submit-label">Submit &amp; escalate</span> <i class="ti ti-arrow-right" aria-hidden="true"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- Right info column -->
+        <div>
+          <div class="card">
+            <div class="card-label">Resolution guide</div>
+            <div style="display:flex;flex-direction:column;gap:10px;font-size:12px">
+              <div style="padding:10px;background:var(--surface2);border-radius:var(--radius)">
+                <span class="badge new" style="margin-bottom:6px">L1 scope</span>
+                <div style="color:var(--text2);line-height:1.5;margin-top:2px">Confirm or deny, document reasoning, escalate when unsure. Do not execute remediations on production without authorization.</div>
+              </div>
+              <div style="padding:10px;background:var(--surface2);border-radius:var(--radius)">
+                <span class="badge high" style="margin-bottom:6px">L2 scope</span>
+                <div style="color:var(--text2);line-height:1.5;margin-top:2px">Deep investigation, incident scoping, containment. Authorized to execute playbooks on production.</div>
+              </div>
+              <div style="padding:10px;background:var(--red-bg);border-radius:var(--radius)">
+                <span class="badge crit" style="margin-bottom:6px">Incident response</span>
+                <div style="color:var(--red-txt);line-height:1.5;margin-top:2px">IR playbook triggered. CISO notified. Post-mortem required within 48 hours.</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-label">Audit trail — alert #ALT-20491</div>
+            <div style="font-size:11px;line-height:1.8;color:var(--text2)">
+              <div><span style="color:var(--text3)">09:14</span> — Alert created by AWS GuardDuty</div>
+              <div><span style="color:var(--text3)">09:19</span> — Assigned to Priya S. (auto-assign: L1 on duty)</div>
+              <div><span style="color:var(--text3)">09:22</span> — Opened for investigation</div>
+              <div style="color:var(--green);font-weight:500"><span style="color:var(--text3)">Now</span> — Resolution pending submission</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<script>
+const ROWS = [
+  {id:'ALT-20491',sev:'Critical',title:'Unusual IAM privilege escalation detected',res:'prod-pipeline-svc',acct:'AWS',type:'IAM',time:'09:14',status:'New',assigned:'Priya S.'},
+  {id:'ALT-20488',sev:'Critical',title:'CloudTrail logging disabled in production account',res:'aws-cloudtrail-prod',acct:'AWS',type:'IAM',time:'09:01',status:'New',assigned:'—'},
+  {id:'ALT-20475',sev:'High',title:'S3 bucket made publicly accessible',res:'s3-data-archive-01',acct:'AWS',type:'Data',time:'08:30',status:'In progress',assigned:'Rajan K.'},
+  {id:'ALT-20463',sev:'High',title:'Lateral movement: cross-account role assumption',res:'arn:dev-cross-role',acct:'Azure',type:'IAM',time:'07:55',status:'New',assigned:'—'},
+  {id:'ALT-20450',sev:'High',title:'Multiple failed login attempts on root account',res:'root@acme-prod',acct:'AWS',type:'IAM',time:'07:20',status:'New',assigned:'Priya S.'},
+  {id:'ALT-20441',sev:'Medium',title:'Security group allows unrestricted inbound traffic',res:'prod-sg-001',acct:'AWS',type:'Misconfig',time:'06:44',status:'In progress',assigned:'Meera T.'},
+  {id:'ALT-20439',sev:'Medium',title:'Unused IAM access key active for 120+ days',res:'svc-legacy-iam',acct:'GCP',type:'IAM',time:'06:10',status:'New',assigned:'—'},
+  {id:'ALT-20421',sev:'Low',title:'EBS volume encryption not enabled',res:'vol-0a9f3c12',acct:'AWS',type:'Misconfig',time:'04:30',status:'Resolved',assigned:'Priya S.'},
+];
+
+const SMAP = {Critical:'crit',High:'high',Medium:'med',Low:'low'};
+const STMAP = {'New':'new','In progress':'prog','Resolved':'res'};
+let selected = new Set();
+
+function renderTable(data) {
+  document.getElementById('table-body').innerHTML = data.map(r => `
+    <tr onclick="rowClick(event,'${r.id}')">
+      <td><input type="checkbox" class="rcb" data-id="${r.id}" onchange="cbChange(event,'${r.id}')"></td>
+      <td><span class="badge ${SMAP[r.sev]}"><span class="dot"></span>${r.sev}</span></td>
+      <td><div class="alert-name">${r.title}</div><div class="alert-id">${r.id} · ${r.type}</div></td>
+      <td class="cell-muted">${r.res}</td>
+      <td class="cell-muted">${r.acct}</td>
+      <td class="cell-muted">${r.time}</td>
+      <td><span class="badge ${STMAP[r.status]}">${r.status}</span></td>
+      <td class="cell-muted">${r.assigned}</td>
+    </tr>`).join('');
+}
+
+function filterTable() {
+  const sev = document.getElementById('sev-f').value;
+  const acct = document.getElementById('acct-f').value;
+  const type = document.getElementById('type-f').value;
+  const stat = document.getElementById('stat-f').value;
+  const q = document.getElementById('search-f').value.toLowerCase();
+  renderTable(ROWS.filter(r =>
+    (!sev || r.sev === sev) &&
+    (!acct || r.acct === acct) &&
+    (!type || r.type === type) &&
+    (!stat || r.status === stat) &&
+    (!q || r.title.toLowerCase().includes(q) || r.res.toLowerCase().includes(q) || r.id.toLowerCase().includes(q))
+  ));
+}
+
+function rowClick(e, id) {
+  if (e.target.type === 'checkbox') return;
+  show('s2', document.querySelectorAll('.tab-btn')[1]);
+}
+function cbChange(e, id) {
+  e.stopPropagation();
+  e.target.checked ? selected.add(id) : selected.delete(id);
+  updateBulk();
+}
+function toggleAll(cb) {
+  document.querySelectorAll('.rcb').forEach(c => { c.checked = cb.checked; cb.checked ? selected.add(c.dataset.id) : selected.delete(c.dataset.id); });
+  updateBulk();
+}
+function updateBulk() {
+  const bar = document.getElementById('bulk-bar');
+  bar.classList.toggle('visible', selected.size > 0);
+  document.getElementById('sel-count').textContent = selected.size + ' alert' + (selected.size > 1 ? 's' : '') + ' selected';
+}
+function clearSel() {
+  selected.clear();
+  document.querySelectorAll('.rcb, #sel-all').forEach(c => c.checked = false);
+  updateBulk();
+}
+function assignMe() { alert('Assigned ' + selected.size + ' alert(s) to Priya S.'); clearSel(); }
+function bulkFP() { alert('Closed ' + selected.size + ' alert(s) as false positives — audit entries created.'); clearSel(); }
+
+const TITLES = {s1:'Alert inbox', s2:'Investigation detail', s3:'Resolution & action'};
+function show(id, btn) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  if (btn) btn.classList.add('active');
+  document.getElementById('topbar-title').textContent = TITLES[id];
+}
+function navTo(id, el) {
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  el.classList.add('active');
+  const tabIdx = {s1:0,s2:1,s3:2}[id];
+  show(id, document.querySelectorAll('.tab-btn')[tabIdx]);
+}
+
+let currentAction = 'escalate';
+const ACTION_LABELS = {fp:'Submit & close alert', escalate:'Submit & escalate', remediate:'Submit & remediate', monitor:'Submit & monitor'};
+const ACTION_AUDIT = {fp:'Mark as false positive', escalate:'Escalate to L2', remediate:'Remediate', monitor:'Monitor — no action'};
+
+function setAction(a) {
+  currentAction = a;
+  selectOpt(a);
+}
+function selectOpt(a) {
+  ['fp','escalate','remediate','monitor'].forEach(o => {
+    const el = document.getElementById('opt-' + o);
+    if (el) el.classList.toggle('selected', o === a);
+  });
+  document.getElementById('remediate-block').style.display = a === 'remediate' ? 'block' : 'none';
+  document.getElementById('submit-label').innerHTML = ACTION_LABELS[a];
+  document.getElementById('audit-action-label').textContent = ACTION_AUDIT[a];
+  currentAction = a;
+}
+
+function submitRes() {
+  const toast = document.getElementById('toast');
+  toast.style.display = 'flex';
+  setTimeout(() => {
+    toast.style.display = 'none';
+    show('s1', document.querySelectorAll('.tab-btn')[0]);
+    document.querySelectorAll('.nav-item').forEach((n,i) => n.classList.toggle('active', i === 0));
+  }, 2400);
+}
+
+const now = new Date();
+const ts = now.toLocaleDateString('en-GB', {day:'2-digit', month:'short', year:'numeric'}) + ' ' + now.toLocaleTimeString('en-GB', {hour:'2-digit', minute:'2-digit'});
+document.getElementById('audit-ts').textContent = ts;
+
+renderTable(ROWS);
+</script>
+</body>
+</html>
