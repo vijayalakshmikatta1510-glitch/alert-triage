@@ -8,6 +8,8 @@
 
 <img width="1362" height="648" alt="{065A719B-A9D6-4EE2-87BA-4123C212F63E}" src="https://github.com/user-attachments/assets/ac3a82f9-2fe0-4029-9df1-9c302c9cf64f" />
 
+https://www.figma.com/proto/qwKhRWBhTSzlsL8fEzz1Tb/Vijaya-lakshmi-Katta-s-team-library?node-id=3335-49&t=GpzB9Hc0AiLtErWn-1
+
 ## 📌 Overview
 
 Modern organizations generate thousands of cloud security alerts every day from various monitoring systems. Security Operations Center (SOC) analysts face a major challenge known as **alert fatigue**, where the high volume of alerts makes it difficult to identify genuine threats quickly.
