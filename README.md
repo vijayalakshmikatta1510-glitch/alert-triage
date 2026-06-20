@@ -2,13 +2,13 @@
 
 # 🛡️ Alert Triage Workflow — Product Management Case Study
 
+https://www.figma.com/proto/qwKhRWBhTSzlsL8fEzz1Tb/Vijaya-lakshmi-Katta-s-team-library?node-id=3335-49&t=GpzB9Hc0AiLtErWn-1
+
 <img width="1352" height="651" alt="{ED486CDE-43F1-49AF-87F6-583F15167A23}" src="https://github.com/user-attachments/assets/e907df13-276c-4502-968f-9ed2c1728aa8" />
 
 <img width="1366" height="645" alt="{F6474875-B896-47F0-BF5E-19C2B20DBA95}" src="https://github.com/user-attachments/assets/1be65f84-f691-4b9e-85d2-ebae158fa7b7" />
 
 <img width="1362" height="648" alt="{065A719B-A9D6-4EE2-87BA-4123C212F63E}" src="https://github.com/user-attachments/assets/ac3a82f9-2fe0-4029-9df1-9c302c9cf64f" />
-
-https://www.figma.com/proto/qwKhRWBhTSzlsL8fEzz1Tb/Vijaya-lakshmi-Katta-s-team-library?node-id=3335-49&t=GpzB9Hc0AiLtErWn-1
 
 ## 📌 Overview
 
